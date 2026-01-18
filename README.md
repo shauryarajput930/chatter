@@ -1,73 +1,90 @@
-# Welcome to your Lovable project
+# Chatter - Real-Time Chat Application
 
-## Project info
+A modern, feature-rich chat application built with cutting-edge web technologies. Connect with others through direct messages, group chats, video calls, and rich media sharing.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Features
 
-## How can I edit this code?
+- **Direct Messaging** - One-on-one conversations with real-time message delivery
+- **Group Chats** - Create and manage group conversations
+- **Video Calling** - High-quality peer-to-peer video calls
+- **Media Sharing** - Upload and share files, images, and documents
+- **Message Reactions** - React to messages with emoji
+- **Typing Indicators** - See when someone is typing
+- **Message Status** - Delivered and read receipts
+- **Dark Mode** - Toggle between light and dark themes
+- **User Profiles** - Customize your profile and avatar
+- **Authentication** - Secure login and signup system
 
-There are several ways of editing your application.
+## Technology Stack
 
-**Use Lovable**
+- **Frontend Framework**: React 18 with TypeScript
+- **Build Tool**: Vite
+- **Styling**: Tailwind CSS
+- **UI Components**: shadcn-ui
+- **Backend**: Supabase (PostgreSQL)
+- **State Management**: Custom React Hooks
+- **Authentication**: Supabase Auth
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## Getting Started
 
-Changes made via Lovable will be committed automatically to this repo.
+### Prerequisites
+- Node.js (v16 or higher)
+- npm or bun package manager
 
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+### Installation
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+# Clone the repository
+git clone <repository-url>
+cd Chatter
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# Install dependencies
+npm install
+# or
+bun install
 
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Start the development server
 npm run dev
+# or
+bun run dev
 ```
 
-**Edit a file directly in GitHub**
+The application will be available at `http://localhost:5173`
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Project Structure
 
-**Use GitHub Codespaces**
+```
+src/
+├── components/        # Reusable UI components
+│   ├── chat/         # Chat-related components
+│   ├── call/         # Video call components
+│   ├── layout/       # Layout components
+│   └── ui/           # shadcn-ui components
+├── hooks/            # Custom React hooks
+├── integrations/     # External service integrations
+├── pages/            # Page components
+└── lib/              # Utility functions
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Development
 
-## What technologies are used for this project?
+The project uses Vite for fast development with hot module replacement (HMR).
 
-This project is built with:
+```sh
+# Development server
+npm run dev
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+# Build for production
+npm run build
 
-## How can I deploy this project?
+# Preview production build
+npm run preview
+```
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+## Author
 
-## Can I connect a custom domain to my Lovable project?
+Created as part of Full Stack Development coursework at PSIT (Pranveer Singh Institute of Technology).
 
-Yes, you can!
+---
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+**Status**: Active Development
