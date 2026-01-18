@@ -6,10 +6,14 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useDirectMessages } from "@/hooks/useDirectMessages";
 import { useTypingPresence } from "@/hooks/useTypingPresence";
+import { useVideoCalls } from "@/hooks/useVideoCalls";
 import { DMSidebar } from "@/components/layout/DMSidebar";
 import { ChatRoom } from "@/components/chat/ChatRoom";
 import { NewChatDialog } from "@/components/chat/NewChatDialog";
+import { IncomingCallDialog } from "@/components/call/IncomingCallDialog";
+import { VideoCallScreen } from "@/components/call/VideoCallScreen";
 import { format } from "date-fns";
+import { MessageDeliveryStatus } from "@/components/chat/MessageStatus";
 
 export default function Messages() {
   const navigate = useNavigate();
@@ -34,6 +38,17 @@ export default function Messages() {
     activeConversation?.id,
     profile
   );
+
+  // Video calls
+  const {
+    incomingCall,
+    activeCall,
+    isInCall,
+    startCall,
+    answerCall,
+    declineCall,
+    endCall,
+  } = useVideoCalls();
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -74,6 +89,27 @@ export default function Messages() {
     await deleteMessage(messageId);
   };
 
+  // Video/Voice call handlers
+  const handleVideoCall = async () => {
+    if (activeConversation?.other_participant) {
+      await startCall(activeConversation.other_participant.id, "video");
+    }
+  };
+
+  const handleVoiceCall = async () => {
+    if (activeConversation?.other_participant) {
+      await startCall(activeConversation.other_participant.id, "audio");
+    }
+  };
+
+  // Determine delivery status based on message state
+  const getDeliveryStatus = (msg: typeof messages[0]): MessageDeliveryStatus => {
+    if (msg.sending) return "sending";
+    if (msg.is_read) return "read";
+    if (msg.is_delivered) return "delivered";
+    return "sent";
+  };
+
   // Format messages for ChatRoom component
   const formattedMessages = messages.map((msg) => ({
     id: msg.id,
@@ -83,7 +119,7 @@ export default function Messages() {
     senderName: msg.sender?.name || "Unknown",
     senderPhoto: msg.sender?.photo_url || undefined,
     isDeleted: msg.is_deleted,
-    isRead: msg.is_read,
+    deliveryStatus: getDeliveryStatus(msg),
     fileUrl: msg.file_url || undefined,
     fileName: msg.file_name || undefined,
     fileType: msg.file_type || undefined,
@@ -162,6 +198,8 @@ export default function Messages() {
             onDeleteMessage={handleDeleteMessage}
             onTyping={handleTyping}
             onBack={() => setSidebarOpen(true)}
+            onVideoCall={handleVideoCall}
+            onVoiceCall={handleVoiceCall}
           />
         ) : (
           <div className="flex items-center justify-center h-full">
@@ -180,6 +218,36 @@ export default function Messages() {
           </div>
         )}
       </main>
+
+      {/* Incoming Call Dialog */}
+      {incomingCall && incomingCall.caller && (
+        <IncomingCallDialog
+          callerName={incomingCall.caller.name}
+          callerPhoto={incomingCall.caller.photo_url}
+          callType={incomingCall.call_type}
+          onAnswer={answerCall}
+          onDecline={declineCall}
+        />
+      )}
+
+      {/* Active Video Call Screen */}
+      {isInCall && activeCall && (
+        <VideoCallScreen
+          roomName={activeCall.room_name}
+          remoteName={
+            activeCall.caller?.id === profile.id
+              ? activeCall.callee?.name || "Unknown"
+              : activeCall.caller?.name || "Unknown"
+          }
+          remotePhoto={
+            activeCall.caller?.id === profile.id
+              ? activeCall.callee?.photo_url
+              : activeCall.caller?.photo_url
+          }
+          callType={activeCall.call_type}
+          onEndCall={endCall}
+        />
+      )}
 
       {/* New Chat Dialog */}
       <NewChatDialog

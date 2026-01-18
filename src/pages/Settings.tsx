@@ -9,6 +9,7 @@ import {
   LogOut,
   ChevronRight,
   User,
+  Loader2,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Switch } from "@/components/ui/switch";
@@ -17,11 +18,13 @@ import { useTheme } from "next-themes";
 
 export default function Settings() {
   const navigate = useNavigate();
-  const { signOut, profile } = useAuth();
+  const { signOut, profile, user, loading: authLoading } = useAuth();
   const { theme, setTheme } = useTheme();
   const [notifications, setNotifications] = useState(true);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   const handleLogout = async () => {
+    setLoggingOut(true);
     await signOut();
     navigate("/login");
   };
@@ -81,6 +84,19 @@ export default function Settings() {
       ],
     },
   ];
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    navigate("/login");
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -154,10 +170,15 @@ export default function Settings() {
         {/* Logout Button */}
         <button
           onClick={handleLogout}
-          className="flex items-center justify-center gap-2 w-full p-4 bg-destructive/10 text-destructive rounded-2xl font-medium hover:bg-destructive/20 transition-colors"
+          disabled={loggingOut}
+          className="flex items-center justify-center gap-2 w-full p-4 bg-destructive/10 text-destructive rounded-2xl font-medium hover:bg-destructive/20 transition-colors disabled:opacity-50"
         >
-          <LogOut className="w-5 h-5" />
-          Log Out
+          {loggingOut ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : (
+            <LogOut className="w-5 h-5" />
+          )}
+          {loggingOut ? "Logging out..." : "Log Out"}
         </button>
       </main>
     </div>

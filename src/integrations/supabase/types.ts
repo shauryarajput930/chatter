@@ -63,6 +63,7 @@ export type Database = {
           file_url: string | null
           id: string
           is_deleted: boolean | null
+          is_delivered: boolean | null
           is_read: boolean | null
           reply_to_id: string | null
           sender_id: string
@@ -76,6 +77,7 @@ export type Database = {
           file_url?: string | null
           id?: string
           is_deleted?: boolean | null
+          is_delivered?: boolean | null
           is_read?: boolean | null
           reply_to_id?: string | null
           sender_id: string
@@ -89,6 +91,7 @@ export type Database = {
           file_url?: string | null
           id?: string
           is_deleted?: boolean | null
+          is_delivered?: boolean | null
           is_read?: boolean | null
           reply_to_id?: string | null
           sender_id?: string
@@ -336,6 +339,57 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      video_calls: {
+        Row: {
+          call_type: string
+          callee_id: string
+          caller_id: string
+          created_at: string
+          ended_at: string | null
+          id: string
+          room_name: string
+          started_at: string | null
+          status: string
+        }
+        Insert: {
+          call_type?: string
+          callee_id: string
+          caller_id: string
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          room_name: string
+          started_at?: string | null
+          status?: string
+        }
+        Update: {
+          call_type?: string
+          callee_id?: string
+          caller_id?: string
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          room_name?: string
+          started_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_calls_callee_id_fkey"
+            columns: ["callee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_calls_caller_id_fkey"
+            columns: ["caller_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

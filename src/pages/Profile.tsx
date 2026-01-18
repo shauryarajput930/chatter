@@ -1,6 +1,6 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Camera, Mail, User, FileText, Save } from "lucide-react";
+import { ArrowLeft, Camera, Mail, User, FileText, Save, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -12,12 +12,21 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 
 export default function Profile() {
   const navigate = useNavigate();
-  const { user, profile } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [name, setName] = useState(profile?.name || "");
-  const [bio, setBio] = useState(profile?.bio || "");
-  const [photoUrl, setPhotoUrl] = useState(profile?.photo_url || "");
+  const [name, setName] = useState("");
+  const [bio, setBio] = useState("");
+  const [photoUrl, setPhotoUrl] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync form state with profile data when it loads
+  useEffect(() => {
+    if (profile) {
+      setName(profile.name || "");
+      setBio(profile.bio || "");
+      setPhotoUrl(profile.photo_url || "");
+    }
+  }, [profile]);
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -79,6 +88,19 @@ export default function Profile() {
       setLoading(false);
     }
   };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    navigate("/login");
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-background">

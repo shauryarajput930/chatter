@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { MessageCircle, Plus, Search, Settings, LogOut, Users } from "lucide-react";
 import { Avatar } from "@/components/chat/Avatar";
 import { ConversationList } from "@/components/chat/ConversationList";
@@ -52,6 +53,7 @@ export function DMSidebar({
   onNewChat,
   onLogout,
 }: DMSidebarProps) {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredConversations = conversations.filter((conv) =>
@@ -135,7 +137,12 @@ export function DMSidebar({
               </p>
             </div>
             <div className="flex items-center gap-1">
-              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => navigate('/settings')}
+                className="h-8 w-8 rounded-lg"
+              >
                 <Settings className="w-4 h-4" />
               </Button>
               <Button

@@ -8,6 +8,8 @@ interface ChatHeaderProps {
   online?: boolean;
   lastSeen?: string;
   onBack?: () => void;
+  onVideoCall?: () => void;
+  onVoiceCall?: () => void;
 }
 
 export function ChatHeader({ 
@@ -15,7 +17,9 @@ export function ChatHeader({
   photo, 
   online = false, 
   lastSeen,
-  onBack 
+  onBack,
+  onVideoCall,
+  onVoiceCall,
 }: ChatHeaderProps) {
   return (
     <div className="flex items-center gap-4 p-4 bg-card border-b border-border shadow-soft">
@@ -46,10 +50,20 @@ export function ChatHeader({
       </div>
       
       <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" className="rounded-xl">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="rounded-xl hover:bg-primary/10 hover:text-primary"
+          onClick={onVoiceCall}
+        >
           <Phone className="w-5 h-5" />
         </Button>
-        <Button variant="ghost" size="icon" className="rounded-xl">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="rounded-xl hover:bg-primary/10 hover:text-primary"
+          onClick={onVideoCall}
+        >
           <Video className="w-5 h-5" />
         </Button>
         <Button variant="ghost" size="icon" className="rounded-xl">

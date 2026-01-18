@@ -1,8 +1,9 @@
 import { Avatar } from "./Avatar";
 import { cn } from "@/lib/utils";
-import { Check, CheckCheck, Trash2, Reply, File, Download } from "lucide-react";
+import { Trash2, Reply, File, Download } from "lucide-react";
 import { useState } from "react";
 import { MessageReactions } from "./MessageReactions";
+import { MessageStatus, MessageDeliveryStatus } from "./MessageStatus";
 
 interface Reaction {
   emoji: string;
@@ -16,7 +17,7 @@ interface ChatBubbleProps {
   senderName: string;
   senderPhoto?: string;
   isSelf: boolean;
-  isRead?: boolean;
+  deliveryStatus?: MessageDeliveryStatus;
   isDeleted?: boolean;
   onDelete?: () => void;
   onReply?: () => void;
@@ -35,7 +36,7 @@ export function ChatBubble({
   senderName,
   senderPhoto,
   isSelf,
-  isRead = false,
+  deliveryStatus = "sent",
   isDeleted = false,
   onDelete,
   onReply,
@@ -163,11 +164,7 @@ export function ChatBubble({
         )}>
           <span className="text-[10px] text-muted-foreground">{timestamp}</span>
           {isSelf && !isDeleted && (
-            isRead ? (
-              <CheckCheck className="w-3.5 h-3.5 text-primary" />
-            ) : (
-              <Check className="w-3.5 h-3.5 text-muted-foreground" />
-            )
+            <MessageStatus status={deliveryStatus} />
           )}
         </div>
       </div>

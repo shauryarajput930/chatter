@@ -29,6 +29,7 @@ interface DirectMessage {
   content: string;
   is_read: boolean;
   is_deleted: boolean;
+  is_delivered: boolean;
   created_at: string;
   sender?: Profile;
   file_url?: string | null;
@@ -39,6 +40,8 @@ interface DirectMessage {
     content: string;
     sender_name: string;
   };
+  // Client-side only - for optimistic UI
+  sending?: boolean;
 }
 
 export function useDirectMessages() {

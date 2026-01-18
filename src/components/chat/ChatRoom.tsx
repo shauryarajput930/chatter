@@ -4,6 +4,8 @@ import { ChatBubble } from "./ChatBubble";
 import { MessageInput } from "./MessageInput";
 import { TypingIndicator } from "./TypingIndicator";
 
+import { MessageDeliveryStatus } from "./MessageStatus";
+
 interface Message {
   id: string;
   text: string;
@@ -12,7 +14,7 @@ interface Message {
   senderName: string;
   senderPhoto?: string;
   isDeleted?: boolean;
-  isRead?: boolean;
+  deliveryStatus?: MessageDeliveryStatus;
   replyToId?: string;
   replyTo?: { senderName: string; content: string } | null;
   fileUrl?: string;
@@ -32,6 +34,8 @@ interface ChatRoomProps {
   onDeleteMessage: (messageId: string) => void;
   onTyping?: (isTyping: boolean) => void;
   onBack?: () => void;
+  onVideoCall?: () => void;
+  onVoiceCall?: () => void;
   reactions?: Record<string, { emoji: string; count: number; hasReacted: boolean }[]>;
   onAddReaction?: (messageId: string, emoji: string) => void;
   onRemoveReaction?: (messageId: string, emoji: string) => void;
@@ -49,6 +53,8 @@ export function ChatRoom({
   onDeleteMessage,
   onTyping,
   onBack,
+  onVideoCall,
+  onVoiceCall,
   reactions = {},
   onAddReaction,
   onRemoveReaction,
@@ -80,6 +86,8 @@ export function ChatRoom({
         online={isOnline}
         lastSeen={lastSeen}
         onBack={onBack}
+        onVideoCall={onVideoCall}
+        onVoiceCall={onVoiceCall}
       />
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
@@ -103,7 +111,7 @@ export function ChatRoom({
                 senderName={message.senderName}
                 senderPhoto={message.senderPhoto}
                 isSelf={message.senderId === currentUserId}
-                isRead={message.isRead}
+                deliveryStatus={message.deliveryStatus}
                 isDeleted={message.isDeleted}
                 replyTo={message.replyTo}
                 fileUrl={message.fileUrl}
