@@ -8,10 +8,18 @@ import { AuthProvider } from "@/hooks/useAuth";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import VerifyEmail from "./pages/VerifyEmail";
 import Chat from "./pages/Chat";
 import Messages from "./pages/Messages";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
+import CallHistory from "./pages/CallHistory";
+import ChangePassword from "./pages/ChangePassword";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
+import OTPPasswordReset from "./pages/OTPPasswordReset";
+import TwoFactorSetup from "./pages/TwoFactorSetup";
+import TwoFactorDisable from "./pages/TwoFactorDisable";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,10 +36,18 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
+              <Route path="/verify-email" element={<VerifyEmail />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/otp-reset-password" element={<OTPPasswordReset />} />
               <Route path="/chat" element={<Chat />} />
               <Route path="/messages" element={<Messages />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/call-history" element={<CallHistory />} />
+              <Route path="/change-password" element={<ChangePassword />} />
+              <Route path="/2fa-setup" element={<TwoFactorSetup />} />
+              <Route path="/2fa-disable" element={<TwoFactorDisable />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

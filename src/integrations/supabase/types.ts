@@ -340,6 +340,36 @@ export type Database = {
         }
         Relationships: []
       }
+      user_2fa: {
+        Row: {
+          backup_codes: string[] | null
+          created_at: string | null
+          id: string
+          is_enabled: boolean | null
+          secret: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          backup_codes?: string[] | null
+          created_at?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          secret: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          backup_codes?: string[] | null
+          created_at?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          secret?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       video_calls: {
         Row: {
           call_type: string

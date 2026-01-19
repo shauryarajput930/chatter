@@ -149,7 +149,7 @@ export default function Index() {
             <span className="font-semibold text-foreground">Chatter</span>
           </div>
           <p className="text-sm text-muted-foreground">
-            © 2024 Chatter. All rights reserved.
+            © 2026 Chatter. All rights reserved.
           </p>
         </div>
       </footer>

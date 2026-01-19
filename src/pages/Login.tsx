@@ -2,8 +2,9 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MessageCircle, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { MessageCircle, Mail, Lock, Eye, EyeOff, Shield, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export default function Login() {
@@ -13,22 +14,175 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // 2FA states
+  const [requires2FA, setRequires2FA] = useState(false);
+  const [twoFACode, setTwoFACode] = useState("");
+  const [pendingUserId, setPendingUserId] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    const { error } = await signIn(email, password);
+    try {
+      // First, attempt to sign in
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (error) {
-      toast.error(error.message || "Failed to sign in");
+      if (signInError) {
+        toast.error(signInError.message || "Failed to sign in");
+        setIsLoading(false);
+        return;
+      }
+
+      if (!signInData.user) {
+        toast.error("Failed to sign in");
+        setIsLoading(false);
+        return;
+      }
+
+      // Check if user has 2FA enabled
+      const { data: check2FAData } = await supabase.functions.invoke("totp-2fa/check", {
+        method: "POST",
+        body: { userId: signInData.user.id },
+      });
+
+      if (check2FAData?.requires2FA) {
+        // User has 2FA, need to verify
+        setPendingUserId(signInData.user.id);
+        setRequires2FA(true);
+        setIsLoading(false);
+        return;
+      }
+
+      // No 2FA, proceed to app
+      toast.success("Welcome back!");
+      navigate("/messages");
+    } catch (error: any) {
+      toast.error(error.message || "An error occurred");
+    } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handle2FAVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (twoFACode.length !== 6 && twoFACode.length !== 9) {
+      toast.error("Please enter a valid code");
       return;
     }
 
-    toast.success("Welcome back!");
-    navigate("/messages");
+    setIsLoading(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("totp-2fa/validate", {
+        method: "POST",
+        body: { 
+          userId: pendingUserId, 
+          code: twoFACode.replace("-", "") 
+        },
+      });
+
+      if (error || !data?.valid) {
+        toast.error("Invalid verification code");
+        setIsLoading(false);
+        return;
+      }
+
+      if (data.usedBackupCode) {
+        toast.info("Backup code used. Consider regenerating your backup codes.");
+      }
+
+      toast.success("Welcome back!");
+      navigate("/messages");
+    } catch (error: any) {
+      toast.error(error.message || "Verification failed");
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  const handleBack = () => {
+    setRequires2FA(false);
+    setTwoFACode("");
+    setPendingUserId(null);
+    // Sign out the pending session
+    supabase.auth.signOut();
+  };
+
+  // 2FA Verification Screen
+  if (requires2FA) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <div className="w-full max-w-md animate-fade-in">
+          <div className="flex justify-center mb-8">
+            <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center shadow-neumorphic">
+              <Shield className="w-8 h-8 text-primary-foreground" />
+            </div>
+          </div>
+
+          <div className="neumorphic p-8">
+            <div className="text-center mb-8">
+              <h1 className="text-2xl font-bold text-foreground mb-2">Two-Factor Authentication</h1>
+              <p className="text-muted-foreground">
+                Enter the 6-digit code from your authenticator app, or use a backup code.
+              </p>
+            </div>
+
+            <form onSubmit={handle2FAVerify} className="space-y-4">
+              <Input
+                type="text"
+                inputMode="numeric"
+                placeholder="000000"
+                value={twoFACode}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/[^0-9-]/g, "").slice(0, 9);
+                  setTwoFACode(val);
+                }}
+                className="text-center text-2xl tracking-[0.3em] font-mono"
+                maxLength={9}
+                autoFocus
+              />
+
+              <Button
+                type="submit"
+                className="w-full"
+                size="lg"
+                disabled={isLoading || (twoFACode.length !== 6 && twoFACode.length !== 9)}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Verifying...
+                  </>
+                ) : (
+                  "Verify"
+                )}
+              </Button>
+
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full"
+                onClick={handleBack}
+              >
+                Back to Login
+              </Button>
+            </form>
+          </div>
+
+          <div className="mt-6 p-4 rounded-2xl bg-accent/50 border border-border">
+            <p className="text-sm text-muted-foreground text-center">
+              Lost access to your authenticator? Use one of your backup codes to sign in.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -85,6 +239,16 @@ export default function Login() {
               </button>
             </div>
 
+            {/* Forgot Password Link */}
+            <div className="text-right">
+              <Link
+                to="/forgot-password"
+                className="text-sm text-primary hover:underline"
+              >
+                Forgot Password?
+              </Link>
+            </div>
+
             {/* Login Button */}
             <Button
               type="submit"
@@ -92,7 +256,14 @@ export default function Login() {
               size="lg"
               disabled={isLoading}
             >
-              {isLoading ? "Signing in..." : "Sign In"}
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Signing in...
+                </>
+              ) : (
+                "Sign In"
+              )}
             </Button>
           </form>
         </div>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -10,16 +10,24 @@ import {
   ChevronRight,
   User,
   Loader2,
+  Lock,
+  Phone,
+  Key,
+  Smartphone,
+  ShieldCheck,
+  ShieldOff,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Switch } from "@/components/ui/switch";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useTheme } from "next-themes";
+import { use2FAStatus } from "@/hooks/use2FAStatus";
 
 export default function Settings() {
   const navigate = useNavigate();
   const { signOut, profile, user, loading: authLoading } = useAuth();
   const { theme, setTheme } = useTheme();
+  const { is2FAEnabled, loading: twoFALoading } = use2FAStatus();
   const [notifications, setNotifications] = useState(true);
   const [loggingOut, setLoggingOut] = useState(false);
 
@@ -38,6 +46,38 @@ export default function Settings() {
           label: "Edit Profile",
           onClick: () => navigate("/profile"),
           showArrow: true,
+        },
+        {
+          icon: Phone,
+          label: "Call History",
+          onClick: () => navigate("/call-history"),
+          showArrow: true,
+        },
+      ],
+    },
+    {
+      title: "Security",
+      items: [
+        {
+          icon: Lock,
+          label: "Change Password",
+          onClick: () => navigate("/change-password"),
+          showArrow: true,
+        },
+        {
+          icon: is2FAEnabled ? ShieldCheck : Key,
+          label: "Two-Factor Authentication",
+          onClick: () => navigate(is2FAEnabled ? "/2fa-disable" : "/2fa-setup"),
+          showArrow: true,
+          subtitle: twoFALoading ? "Loading..." : is2FAEnabled ? "Enabled" : "Not enabled",
+          statusColor: is2FAEnabled ? "text-green-500" : undefined,
+        },
+        {
+          icon: Smartphone,
+          label: "Active Sessions",
+          onClick: () => {},
+          showArrow: true,
+          subtitle: "Coming soon",
         },
       ],
     },
@@ -155,8 +195,13 @@ export default function Settings() {
                   } ${index > 0 ? "border-t border-border" : ""}`}
                 >
                   <div className="flex items-center gap-3">
-                    <item.icon className="w-5 h-5 text-muted-foreground" />
-                    <span>{item.label}</span>
+                    <item.icon className={`w-5 h-5 ${"statusColor" in item && item.statusColor ? item.statusColor : "text-muted-foreground"}`} />
+                    <div>
+                      <span>{item.label}</span>
+                      {"subtitle" in item && item.subtitle && (
+                        <p className={`text-xs ${"statusColor" in item && item.statusColor ? item.statusColor : "text-muted-foreground"}`}>{item.subtitle}</p>
+                      )}
+                    </div>
                   </div>
                   {item.action || (item.showArrow && (
                     <ChevronRight className="w-5 h-5 text-muted-foreground" />

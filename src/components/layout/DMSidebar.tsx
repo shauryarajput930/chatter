@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { MessageCircle, Plus, Search, Settings, LogOut, Users } from "lucide-react";
+import { MessageCircle, Plus, Search, Settings, LogOut, Users, Phone } from "lucide-react";
 import { Avatar } from "@/components/chat/Avatar";
 import { ConversationList } from "@/components/chat/ConversationList";
 import { Button } from "@/components/ui/button";
@@ -140,8 +140,18 @@ export function DMSidebar({
               <Button 
                 variant="ghost" 
                 size="icon" 
+                onClick={() => navigate('/call-history')}
+                className="h-8 w-8 rounded-lg"
+                title="Call History"
+              >
+                <Phone className="w-4 h-4" />
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="icon" 
                 onClick={() => navigate('/settings')}
                 className="h-8 w-8 rounded-lg"
+                title="Settings"
               >
                 <Settings className="w-4 h-4" />
               </Button>
@@ -150,6 +160,7 @@ export function DMSidebar({
                 size="icon"
                 onClick={onLogout}
                 className="h-8 w-8 rounded-lg text-destructive hover:text-destructive"
+                title="Log out"
               >
                 <LogOut className="w-4 h-4" />
               </Button>
