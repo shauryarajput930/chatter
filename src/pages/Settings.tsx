@@ -22,6 +22,8 @@ import { Switch } from "@/components/ui/switch";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useTheme } from "next-themes";
 import { use2FAStatus } from "@/hooks/use2FAStatus";
+import { NotificationSettings } from "@/components/chat/NotificationSettings";
+import { UsernameSettings } from "@/components/chat/UsernameSettings";
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -174,9 +176,32 @@ export default function Settings() {
           </div>
           <div className="flex-1">
             <p className="font-semibold">{profile?.name || "User"}</p>
+            {profile?.username && (
+              <p className="text-sm text-muted-foreground">@{profile.username}</p>
+            )}
             <p className="text-sm text-muted-foreground">{profile?.email}</p>
           </div>
           <ChevronRight className="w-5 h-5 text-muted-foreground" />
+        </div>
+
+        {/* Username Settings Section */}
+        <div className="space-y-2">
+          <h2 className="text-sm font-medium text-muted-foreground px-2">
+            Username
+          </h2>
+          <div className="bg-card rounded-2xl shadow-soft overflow-hidden p-4">
+            <UsernameSettings />
+          </div>
+        </div>
+
+        {/* Preferences Section with Notifications */}
+        <div className="space-y-2">
+          <h2 className="text-sm font-medium text-muted-foreground px-2">
+            Notifications
+          </h2>
+          <div className="bg-card rounded-2xl shadow-soft overflow-hidden p-4">
+            <NotificationSettings />
+          </div>
         </div>
 
         {/* Settings Sections */}

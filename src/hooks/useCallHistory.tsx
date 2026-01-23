@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 interface Profile {
   id: string;
   name: string;
+  username?: string;
   photo_url: string | null;
 }
 
@@ -66,7 +67,7 @@ export function useCallHistory() {
         // Fetch all related profiles
         const { data: profilesData, error: profilesError } = await supabase
           .from("profiles")
-          .select("id, name, photo_url")
+          .select("id, name, username, photo_url")
           .in("id", Array.from(profileIds));
 
         if (profilesError) throw profilesError;

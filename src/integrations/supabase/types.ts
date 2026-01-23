@@ -277,6 +277,7 @@ export type Database = {
           photo_url: string | null
           updated_at: string | null
           user_id: string
+          username: string | null
         }
         Insert: {
           bio?: string | null
@@ -289,6 +290,7 @@ export type Database = {
           photo_url?: string | null
           updated_at?: string | null
           user_id: string
+          username?: string | null
         }
         Update: {
           bio?: string | null
@@ -301,6 +303,7 @@ export type Database = {
           photo_url?: string | null
           updated_at?: string | null
           user_id?: string
+          username?: string | null
         }
         Relationships: []
       }

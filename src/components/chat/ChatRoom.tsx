@@ -25,33 +25,38 @@ interface Message {
 interface ChatRoomProps {
   roomName: string;
   roomPhoto?: string;
+  roomUserId?: string;
   messages: Message[];
   currentUserId: string;
-  typingUser?: { name: string; photo?: string } | null;
+  typingUsers?: Array<{ name: string; photo?: string }>;
   isOnline?: boolean;
   lastSeen?: string;
-  onSendMessage: (message: string, file?: { url: string; name: string; type: string }, replyToId?: string) => void;
+  onSendMessage: (content: string, file?: File) => void;
   onDeleteMessage: (messageId: string) => void;
-  onTyping?: (isTyping: boolean) => void;
+  onClearChat?: () => void;
   onBack?: () => void;
   onVideoCall?: () => void;
   onVoiceCall?: () => void;
   reactions?: Record<string, { emoji: string; count: number; hasReacted: boolean }[]>;
   onAddReaction?: (messageId: string, emoji: string) => void;
   onRemoveReaction?: (messageId: string, emoji: string) => void;
+  onReplyToMessage?: (message: Message) => void;
+  replyingTo?: Message | null;
+  onCancelReply?: () => void;
 }
 
 export function ChatRoom({
   roomName,
   roomPhoto,
+  roomUserId,
   messages,
   currentUserId,
-  typingUser,
+  typingUsers = [],
   isOnline = false,
   lastSeen,
   onSendMessage,
   onDeleteMessage,
-  onTyping,
+  onClearChat,
   onBack,
   onVideoCall,
   onVoiceCall,
@@ -68,7 +73,7 @@ export function ChatRoom({
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, typingUser]);
+  }, [messages]);
 
   const handleReply = (message: Message) => {
     setReplyTo({
@@ -85,9 +90,11 @@ export function ChatRoom({
         photo={roomPhoto}
         online={isOnline}
         lastSeen={lastSeen}
+        userId={roomUserId}
         onBack={onBack}
         onVideoCall={onVideoCall}
         onVoiceCall={onVoiceCall}
+        onClearChat={onClearChat}
       />
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
@@ -129,10 +136,10 @@ export function ChatRoom({
               />
             ))}
             
-            {typingUser && (
+            {typingUsers && typingUsers.length > 0 && (
               <TypingIndicator
-                userName={typingUser.name}
-                userPhoto={typingUser.photo}
+                userName={typingUsers[0].name}
+                userPhoto={typingUsers[0].photo}
               />
             )}
           </>
@@ -142,7 +149,6 @@ export function ChatRoom({
 
       <MessageInput
         onSend={onSendMessage}
-        onTyping={onTyping}
         userId={currentUserId}
         replyTo={replyTo}
         onCancelReply={() => setReplyTo(null)}

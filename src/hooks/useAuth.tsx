@@ -6,6 +6,7 @@ interface Profile {
   id: string;
   user_id: string;
   name: string;
+  username?: string;
   email: string | null;
   photo_url: string | null;
   bio: string | null;
@@ -40,11 +41,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (data && !error) {
       setProfile(data);
-      // Update online status
-      await supabase
-        .from("profiles")
-        .update({ is_online: true, last_seen: new Date().toISOString() })
-        .eq("user_id", userId);
     }
   };
 
@@ -80,41 +76,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  // Update last_seen periodically and on window blur
-  useEffect(() => {
-    if (!user) return;
-
-    const updateOnlineStatus = async (online: boolean) => {
-      await supabase
-        .from("profiles")
-        .update({ is_online: online, last_seen: new Date().toISOString() })
-        .eq("user_id", user.id);
-    };
-
-    const handleVisibilityChange = () => {
-      updateOnlineStatus(!document.hidden);
-    };
-
-    const handleBeforeUnload = () => {
-      updateOnlineStatus(false);
-    };
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    window.addEventListener("beforeunload", handleBeforeUnload);
-
-    // Heartbeat to keep online status updated
-    const interval = setInterval(() => {
-      updateOnlineStatus(true);
-    }, 60000);
-
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-      clearInterval(interval);
-      updateOnlineStatus(false);
-    };
-  }, [user]);
-
   const signUp = async (email: string, password: string, name: string) => {
     const { error } = await supabase.auth.signUp({
       email,
@@ -138,12 +99,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    if (user) {
-      await supabase
-        .from("profiles")
-        .update({ is_online: false, last_seen: new Date().toISOString() })
-        .eq("user_id", user.id);
-    }
     await supabase.auth.signOut();
     setUser(null);
     setProfile(null);

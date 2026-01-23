@@ -1,169 +1,219 @@
-import { useState } from "react";
-import { Sidebar } from "@/components/layout/Sidebar";
-import { ChatRoom } from "@/components/chat/ChatRoom";
+import { useState, useEffect, lazy, Suspense } from "react";
+import { GroupSidebar } from "@/components/layout/GroupSidebar";
+import { CreateGroupDialog } from "@/components/chat/CreateGroupDialog";
+import { GroupMembersDialog } from "@/components/chat/GroupMembersDialog";
+import { AddMemberDialog } from "@/components/chat/AddMemberDialog";
+import { VideoCallScreen } from "@/components/call/VideoCallScreen";
 import { useNavigate } from "react-router-dom";
-import { Menu } from "lucide-react";
+import { Menu, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
+import { useGroupChats } from "@/hooks/useGroupChats";
+import { format } from "date-fns";
 
-// Mock data - will be replaced with real data from backend
-const mockRooms = [
-  { id: "1", name: "General Chat", memberCount: 24, createdAt: "Jan 10, 2024" },
-  { id: "2", name: "Design Team", memberCount: 8, createdAt: "Dec 15, 2023" },
-  { id: "3", name: "Developers", memberCount: 15, createdAt: "Nov 20, 2023" },
-  { id: "4", name: "Marketing", memberCount: 6, createdAt: "Jan 5, 2024" },
-  { id: "5", name: "Project Alpha", memberCount: 4, createdAt: "Jan 12, 2024" },
-];
-
-const mockMessages: Record<string, Array<{
-  id: string;
-  text: string;
-  timestamp: string;
-  senderId: string;
-  senderName: string;
-  senderPhoto?: string;
-  isDeleted?: boolean;
-  isRead?: boolean;
-}>> = {
-  "1": [
-    {
-      id: "m1",
-      text: "Hey everyone! 👋 Welcome to the General Chat.",
-      timestamp: "10:30 AM",
-      senderId: "user2",
-      senderName: "Sarah Chen",
-      isRead: true,
-    },
-    {
-      id: "m2",
-      text: "Thanks for having us! Excited to be here.",
-      timestamp: "10:32 AM",
-      senderId: "user1",
-      senderName: "You",
-      isRead: true,
-    },
-    {
-      id: "m3",
-      text: "Great to see everyone online! Let's make this a productive week. 🚀",
-      timestamp: "10:35 AM",
-      senderId: "user3",
-      senderName: "Mike Johnson",
-      isRead: true,
-    },
-    {
-      id: "m4",
-      text: "Absolutely! I've got some exciting updates to share about the new feature we've been working on.",
-      timestamp: "10:38 AM",
-      senderId: "user2",
-      senderName: "Sarah Chen",
-      isRead: true,
-    },
-    {
-      id: "m5",
-      text: "Can't wait to hear about it! Should we schedule a quick sync?",
-      timestamp: "10:40 AM",
-      senderId: "user1",
-      senderName: "You",
-      isRead: false,
-    },
-  ],
-  "2": [
-    {
-      id: "m1",
-      text: "New design mockups are ready for review! 🎨",
-      timestamp: "9:15 AM",
-      senderId: "user4",
-      senderName: "Alex Rivera",
-      isRead: true,
-    },
-    {
-      id: "m2",
-      text: "They look amazing! Love the new color scheme.",
-      timestamp: "9:20 AM",
-      senderId: "user1",
-      senderName: "You",
-      isRead: true,
-    },
-  ],
-};
-
-const currentUser = {
-  id: "user1",
-  name: "John Doe",
-  email: "john@example.com",
-};
+// Lazy load heavy components
+const ChatRoom = lazy(() => import("@/components/chat/ChatRoom").then(module => ({ default: module.ChatRoom })));
 
 export default function Chat() {
   const navigate = useNavigate();
-  const [activeRoomId, setActiveRoomId] = useState<string>("1");
-  const [messages, setMessages] = useState(mockMessages);
-  const [typingUser, setTypingUser] = useState<{ name: string; photo?: string } | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { user, profile, loading: authLoading, signOut } = useAuth();
+  const {
+    groups,
+    activeGroup,
+    setActiveGroup,
+    messages,
+    members,
+    allProfiles,
+    loading: groupsLoading,
+    createGroup,
+    sendMessage,
+    deleteMessage,
+    deleteGroupChat,
+    addMembers,
+    refreshGroups,
+  } = useGroupChats();
 
-  const activeRoom = mockRooms.find((r) => r.id === activeRoomId);
-  const roomMessages = messages[activeRoomId] || [];
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [createGroupOpen, setCreateGroupOpen] = useState(false);
+  const [membersDialogOpen, setMembersDialogOpen] = useState(false);
+  const [addMemberDialogOpen, setAddMemberDialogOpen] = useState(false);
+  const [isCreatingGroup, setIsCreatingGroup] = useState(false);
+  const [activeCall, setActiveCall] = useState<{
+    type: "video" | "audio";
+    targetUserId: string;
+    targetUserName: string;
+    targetUserPhoto?: string | null;
+  } | null>(null);
 
-  const handleSendMessage = (text: string) => {
-    const newMessage = {
-      id: `m${Date.now()}`,
-      text,
-      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      senderId: currentUser.id,
-      senderName: "You",
-      isRead: false,
-    };
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate("/login");
+    }
+  }, [authLoading, user, navigate]);
 
-    setMessages((prev) => ({
-      ...prev,
-      [activeRoomId]: [...(prev[activeRoomId] || []), newMessage],
-    }));
-
-    // Simulate receiving a reply
-    setTimeout(() => {
-      setTypingUser({ name: "Sarah Chen" });
-      setTimeout(() => {
-        setTypingUser(null);
-        const reply = {
-          id: `m${Date.now()}`,
-          text: "Got it! Thanks for the update. 👍",
-          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          senderId: "user2",
-          senderName: "Sarah Chen",
-          isRead: true,
-        };
-        setMessages((prev) => ({
-          ...prev,
-          [activeRoomId]: [...(prev[activeRoomId] || []), reply],
-        }));
-      }, 2000);
-    }, 1000);
-  };
-
-  const handleDeleteMessage = (messageId: string) => {
-    setMessages((prev) => ({
-      ...prev,
-      [activeRoomId]: prev[activeRoomId].map((msg) =>
-        msg.id === messageId ? { ...msg, isDeleted: true } : msg
-      ),
-    }));
-  };
-
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await signOut();
     navigate("/login");
   };
 
-  const handleNewGroup = () => {
-    // Will open create group dialog
-    alert("Create new group - will be implemented with backend");
+  const handleCreateGroup = async (groupName: string, memberIds: string[]) => {
+    setIsCreatingGroup(true);
+    try {
+      await createGroup(groupName, memberIds);
+      setCreateGroupOpen(false);
+    } catch (error) {
+      console.error("Failed to create group:", error);
+      alert("Failed to create group");
+    } finally {
+      setIsCreatingGroup(false);
+    }
   };
 
-  const handleSelectRoom = (roomId: string) => {
-    setActiveRoomId(roomId);
+  const handleSelectGroup = (group: typeof groups[0]) => {
+    setActiveGroup(group.id);
     setSidebarOpen(false);
   };
 
+  const handleSendMessage = async (text: string, file?: { url: string; name: string; type: string }, replyToId?: string) => {
+    await sendMessage(text, file, replyToId);
+  };
+
+  const handleDeleteMessage = async (messageId: string) => {
+    await deleteMessage(messageId);
+  };
+
+  const handleShowMembers = () => {
+    setMembersDialogOpen(true);
+  };
+
+  const handleAddMembers = async (memberIds: string[]) => {
+    if (activeGroup) {
+      await addMembers(activeGroup, memberIds);
+    }
+  };
+
+  const handleDeleteChat = async () => {
+    console.log("Chat page handleDeleteChat called, activeGroup:", activeGroup);
+    if (activeGroup) {
+      await deleteGroupChat(activeGroup);
+    }
+  };
+
+  const handleVideoCall = () => {
+    // For demo, call the first member in the group
+    if (members.length > 0) {
+      const targetMember = members[0];
+      setActiveCall({
+        type: "video",
+        targetUserId: targetMember.profile_id,
+        targetUserName: targetMember.profile?.name || "Unknown",
+        targetUserPhoto: targetMember.profile?.photo_url,
+      });
+    }
+  };
+
+  const handleVoiceCall = () => {
+    // For demo, call the first member in the group
+    if (members.length > 0) {
+      const targetMember = members[0];
+      setActiveCall({
+        type: "audio",
+        targetUserId: targetMember.profile_id,
+        targetUserName: targetMember.profile?.name || "Unknown",
+        targetUserPhoto: targetMember.profile?.photo_url,
+      });
+    }
+  };
+
+  const handleEndCall = () => {
+    setActiveCall(null);
+  };
+
+  const activeGroupData = groups.find((g) => g.id === activeGroup);
+
+  // Format messages for ChatRoom
+  const formattedMessages = messages.map((msg) => ({
+    id: msg.id,
+    text: msg.is_deleted ? "This message was deleted" : msg.content,
+    timestamp: format(new Date(msg.created_at), "h:mm a"),
+    senderId: msg.sender_id,
+    senderName: msg.sender?.name || "Unknown",
+    senderPhoto: msg.sender?.photo_url || undefined,
+    isDeleted: msg.is_deleted,
+    fileUrl: msg.file_url || undefined,
+    fileName: msg.file_name || undefined,
+    fileType: msg.file_type || undefined,
+    replyTo: msg.reply_to ? { senderName: msg.reply_to.sender_name, content: msg.reply_to.content } : null,
+  }));
+
+  if (authLoading || groupsLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-background">
+        <div className="text-center">
+          <div className="w-16 h-16 rounded-2xl bg-primary/20 flex items-center justify-center mx-auto mb-4 animate-pulse">
+            <span className="text-2xl">💬</span>
+          </div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user || !profile) {
+    return null;
+  }
+
   return (
     <div className="flex h-screen bg-background">
+      {/* Debug Sidebar Toggle - Remove this later */}
+      <Button
+        variant="ghost"
+        size="sm"
+        className="fixed top-4 right-4 z-50 bg-red-500 text-white"
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+      >
+        {sidebarOpen ? 'Hide' : 'Show'} Sidebar
+      </Button>
+
+      {/* Group Action Buttons */}
+      <div className="fixed top-16 right-4 z-50 space-y-2">
+        {/* Create New Group */}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="bg-blue-500 text-white w-full"
+          onClick={() => setCreateGroupOpen(true)}
+        >
+          ➕ Create New Group
+        </Button>
+        
+        {/* Add Members to Existing Group */}
+        {activeGroup && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="bg-green-500 text-white w-full"
+            onClick={() => setAddMemberDialogOpen(true)}
+          >
+            👥 Add Member
+          </Button>
+        )}
+        
+        {/* View Members */}
+        {activeGroup && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="bg-purple-500 text-white w-full"
+            onClick={handleShowMembers}
+          >
+            👁️ View Members
+          </Button>
+        )}
+      </div>
+
       {/* Mobile Menu Button */}
       <Button
         variant="ghost"
@@ -189,29 +239,62 @@ export default function Chat() {
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        <Sidebar
-          rooms={mockRooms}
-          activeRoomId={activeRoomId}
-          onSelectRoom={handleSelectRoom}
-          onNewGroup={handleNewGroup}
-          currentUser={currentUser}
+        <GroupSidebar
+          groups={groups}
+          activeGroupId={activeGroup}
+          onSelectGroup={handleSelectGroup}
+          onNewGroup={() => setCreateGroupOpen(true)}
+          currentProfile={profile}
           onLogout={handleLogout}
         />
       </div>
 
       {/* Main Chat Area */}
-      <main className="flex-1 h-screen">
-        {activeRoom ? (
-          <ChatRoom
-            roomName={activeRoom.name}
-            messages={roomMessages}
-            currentUserId={currentUser.id}
-            typingUser={typingUser}
-            isOnline={true}
-            onSendMessage={handleSendMessage}
-            onDeleteMessage={handleDeleteMessage}
-            onBack={() => setSidebarOpen(true)}
-          />
+      <main className="flex-1 h-screen flex flex-col">
+        {activeGroupData ? (
+          <>
+            {/* Group Header */}
+            <div className="bg-card border-b border-border p-4 flex items-center justify-between">
+              <div className="min-w-0 flex-1">
+                <h2 className="text-lg font-semibold text-foreground truncate">
+                  {activeGroupData.name}
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  {members.length} member{members.length !== 1 ? "s" : ""}
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleShowMembers}
+                className="rounded-lg"
+                title="View members"
+              >
+                <Users className="w-5 h-5" />
+              </Button>
+            </div>
+
+            {/* Chat Room */}
+            <Suspense fallback={
+              <div className="flex-1 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            }>
+              <ChatRoom
+                roomName={activeGroupData.name}
+                messages={formattedMessages}
+                currentUserId={profile.id}
+                typingUser={null}
+                isOnline={true}
+                onSendMessage={handleSendMessage}
+                onDeleteMessage={handleDeleteMessage}
+                onClearChat={handleDeleteChat}
+                onVideoCall={handleVideoCall}
+                onVoiceCall={handleVoiceCall}
+                onBack={() => setSidebarOpen(true)}
+              />
+            </Suspense>
+          </>
         ) : (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
@@ -219,15 +302,64 @@ export default function Chat() {
                 <span className="text-4xl">💬</span>
               </div>
               <h2 className="text-xl font-semibold text-foreground mb-2">
-                Select a chat
+                No Groups Yet
               </h2>
-              <p className="text-muted-foreground">
-                Choose a group from the sidebar to start chatting
+              <p className="text-muted-foreground mb-4">
+                Create a new group or ask someone to add you
               </p>
+              <Button onClick={() => setCreateGroupOpen(true)} className="rounded-xl">
+                Create Group
+              </Button>
             </div>
           </div>
         )}
       </main>
+
+      {/* Create Group Dialog */}
+      <CreateGroupDialog
+        open={createGroupOpen}
+        onOpenChange={setCreateGroupOpen}
+        availableProfiles={allProfiles}
+        currentUserId={profile.id}
+        onCreateGroup={handleCreateGroup}
+        isLoading={isCreatingGroup}
+      />
+
+      {/* Group Members Dialog */}
+      {activeGroupData && (
+        <GroupMembersDialog
+          open={membersDialogOpen}
+          onOpenChange={setMembersDialogOpen}
+          groupName={activeGroupData.name}
+          members={members}
+          currentUserId={profile.id}
+          isGroupAdmin={activeGroupData.created_by === profile.id}
+        />
+      )}
+      
+      {/* Active Call Overlay */}
+      {activeCall && (
+        <VideoCallScreen
+          roomName={`call-${profile.id}-${activeCall.targetUserId}`}
+          remoteName={activeCall.targetUserName}
+          remotePhoto={activeCall.targetUserPhoto}
+          callType={activeCall.type}
+          calleeId={activeCall.targetUserId}
+          currentUserId={profile.id}
+          onEndCall={handleEndCall}
+        />
+      )}
+      
+      {/* Add Member Dialog */}
+      {activeGroup && (
+        <AddMemberDialog
+          open={addMemberDialogOpen}
+          onOpenChange={setAddMemberDialogOpen}
+          groupId={activeGroup}
+          currentMemberIds={members.map(m => m.profile_id)}
+          onAddMembers={handleAddMembers}
+        />
+      )}
     </div>
   );
 }

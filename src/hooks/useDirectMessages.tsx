@@ -6,6 +6,7 @@ interface Profile {
   id: string;
   user_id: string;
   name: string;
+  username?: string;
   email: string | null;
   photo_url: string | null;
   is_online: boolean;
@@ -282,6 +283,41 @@ export function useDirectMessages() {
     []
   );
 
+  // Mark message as delivered
+  const markAsDelivered = useCallback(
+    async (messageId: string) => {
+      await supabase
+        .from("direct_messages")
+        .update({ is_delivered: true })
+        .eq("id", messageId);
+    },
+    []
+  );
+
+  // Mark message as read
+  const markAsRead = useCallback(
+    async (messageId: string) => {
+      await supabase
+        .from("direct_messages")
+        .update({ is_read: true })
+        .eq("id", messageId);
+    },
+    []
+  );
+
+  // Mark all messages in conversation as read
+  const markConversationAsRead = useCallback(
+    async (conversationId: string) => {
+      if (!profile) return;
+      await supabase
+        .from("direct_messages")
+        .update({ is_read: true, is_delivered: true })
+        .eq("conversation_id", conversationId)
+        .neq("sender_id", profile.id);
+    },
+    [profile]
+  );
+
   // Set up realtime subscriptions
   useEffect(() => {
     if (!profile) return;
@@ -352,6 +388,9 @@ export function useDirectMessages() {
     startConversation,
     sendMessage,
     deleteMessage,
+    markAsDelivered,
+    markAsRead,
+    markConversationAsRead,
     refreshConversations: fetchConversations,
   };
 }

@@ -6,6 +6,7 @@ interface Profile {
   id: string;
   user_id: string;
   name: string;
+  username?: string;
   email: string | null;
   photo_url: string | null;
   is_online: boolean;
@@ -56,9 +57,20 @@ export function UserList({ profiles, onSelectUser, title = "Start a chat" }: Use
             showStatus
           />
           <div className="flex-1 min-w-0">
-            <p className="font-medium text-sm text-foreground truncate">
-              {profile.name}
-            </p>
+            {profile.username ? (
+              <>
+                <p className="font-medium text-sm text-foreground truncate">
+                  @{profile.username}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {profile.name}
+                </p>
+              </>
+            ) : (
+              <p className="font-medium text-sm text-foreground truncate">
+                {profile.name}
+              </p>
+            )}
             <p className="text-xs text-muted-foreground truncate">
               {profile.is_online
                 ? "Online"

@@ -1,6 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
-import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -8,12 +7,14 @@ import { useDirectMessages } from "@/hooks/useDirectMessages";
 import { useTypingPresence } from "@/hooks/useTypingPresence";
 import { useVideoCalls } from "@/hooks/useVideoCalls";
 import { DMSidebar } from "@/components/layout/DMSidebar";
-import { ChatRoom } from "@/components/chat/ChatRoom";
 import { NewChatDialog } from "@/components/chat/NewChatDialog";
 import { IncomingCallDialog } from "@/components/call/IncomingCallDialog";
 import { VideoCallScreen } from "@/components/call/VideoCallScreen";
 import { format } from "date-fns";
 import { MessageDeliveryStatus } from "@/components/chat/MessageStatus";
+
+// Lazy load heavy components
+const ChatRoom = lazy(() => import("@/components/chat/ChatRoom").then(module => ({ default: module.ChatRoom })));
 
 export default function Messages() {
   const navigate = useNavigate();
@@ -28,10 +29,14 @@ export default function Messages() {
     startConversation,
     sendMessage,
     deleteMessage,
+    markAsDelivered,
+    markAsRead,
+    markConversationAsRead,
   } = useDirectMessages();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [newChatOpen, setNewChatOpen] = useState(false);
+  const [currentView, setCurrentView] = useState<'friends' | 'chat'>('friends');
 
   // Typing presence
   const { typingUser, setTyping, stopTyping } = useTypingPresence(
@@ -57,6 +62,24 @@ export default function Messages() {
     }
   }, [authLoading, user, navigate]);
 
+  // Mark incoming messages as delivered and read when conversation is viewed
+  useEffect(() => {
+    if (activeConversation && profile && messages.length > 0) {
+      const unreadMessages = messages.filter(
+        (msg) => msg.sender_id !== profile.id && !msg.is_read
+      );
+      
+      unreadMessages.forEach((msg) => {
+        // Mark as delivered first
+        if (!msg.is_delivered) {
+          markAsDelivered(msg.id);
+        }
+        // Then mark as read
+        markAsRead(msg.id);
+      });
+    }
+  }, [activeConversation, profile, messages, markAsDelivered, markAsRead]);
+
   const handleLogout = async () => {
     await signOut();
     navigate("/login");
@@ -65,6 +88,7 @@ export default function Messages() {
   const handleSelectConversation = (conversation: typeof activeConversation) => {
     setActiveConversation(conversation);
     setSidebarOpen(false);
+    setCurrentView('chat'); // Switch to chat view on mobile
   };
 
   const handleNewChat = () => {
@@ -74,6 +98,11 @@ export default function Messages() {
   const handleSelectUser = async (profileId: string) => {
     await startConversation(profileId);
     setSidebarOpen(false);
+    setCurrentView('chat'); // Switch to chat view on mobile
+  };
+
+  const handleBackToFriends = () => {
+    setCurrentView('friends');
   };
 
   const handleSendMessage = async (text: string, file?: { url: string; name: string; type: string }, replyToId?: string) => {
@@ -145,79 +174,129 @@ export default function Messages() {
 
   return (
     <div className="flex h-screen bg-background">
-      {/* Mobile Menu Button */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="fixed top-4 left-4 z-50 lg:hidden rounded-xl shadow-soft bg-card"
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-      >
-        <Menu className="w-5 h-5" />
-      </Button>
-
-      {/* Sidebar Overlay for Mobile */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-foreground/20 backdrop-blur-sm z-30 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {/* Sidebar */}
-      <div
-        className={cn(
-          "fixed lg:relative z-40 transition-transform duration-300 lg:translate-x-0",
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+      {/* Mobile Layout: Show either friends or chat, not both */}
+      <div className="flex w-full lg:hidden">
+        {currentView === 'friends' ? (
+          /* Friends/Settings Page - Full screen on mobile */
+          <div className="w-full">
+            <DMSidebar
+              conversations={conversations}
+              activeConversationId={activeConversation?.id}
+              currentProfile={profile}
+              onSelectConversation={handleSelectConversation}
+              onNewChat={handleNewChat}
+              onLogout={handleLogout}
+            />
+          </div>
+        ) : (
+          /* Chat Page - Full screen on mobile with back button */
+          <main className="flex-1 h-screen w-full">
+            {activeConversation && activeConversation.other_participant ? (
+              <Suspense fallback={
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+              }>
+                <ChatRoom
+                  roomName={activeConversation.other_participant.name}
+                  roomPhoto={activeConversation.other_participant.photo_url || undefined}
+                  roomUserId={activeConversation.other_participant.user_id}
+                  messages={formattedMessages}
+                  currentUserId={profile.id}
+                  typingUser={typingUser}
+                  isOnline={activeConversation.other_participant.is_online}
+                  lastSeen={format(
+                    new Date(activeConversation.other_participant.last_seen),
+                    "MMM d, h:mm a"
+                  )}
+                  onSendMessage={handleSendMessage}
+                  onDeleteMessage={handleDeleteMessage}
+                  onTyping={handleTyping}
+                  onBack={handleBackToFriends}
+                  onVideoCall={handleVideoCall}
+                  onVoiceCall={handleVoiceCall}
+                />
+              </Suspense>
+            ) : (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-center">
+                  <div className="w-24 h-24 rounded-3xl bg-accent flex items-center justify-center mx-auto mb-4 shadow-soft">
+                    <span className="text-4xl">💬</span>
+                  </div>
+                  <h2 className="text-xl font-semibold text-foreground mb-2">
+                    Your Messages
+                  </h2>
+                  <p className="text-muted-foreground mb-4">
+                    Send private messages to other users
+                  </p>
+                  <Button onClick={handleNewChat}>Start a conversation</Button>
+                </div>
+              </div>
+            )}
+          </main>
         )}
-      >
-        <DMSidebar
-          conversations={conversations}
-          activeConversationId={activeConversation?.id}
-          currentProfile={profile}
-          onSelectConversation={handleSelectConversation}
-          onNewChat={handleNewChat}
-          onLogout={handleLogout}
-        />
       </div>
 
-      {/* Main Chat Area */}
-      <main className="flex-1 h-screen">
-        {activeConversation && activeConversation.other_participant ? (
-          <ChatRoom
-            roomName={activeConversation.other_participant.name}
-            roomPhoto={activeConversation.other_participant.photo_url || undefined}
-            messages={formattedMessages}
-            currentUserId={profile.id}
-            typingUser={typingUser}
-            isOnline={activeConversation.other_participant.is_online}
-            lastSeen={format(
-              new Date(activeConversation.other_participant.last_seen),
-              "MMM d, h:mm a"
-            )}
-            onSendMessage={handleSendMessage}
-            onDeleteMessage={handleDeleteMessage}
-            onTyping={handleTyping}
-            onBack={() => setSidebarOpen(true)}
-            onVideoCall={handleVideoCall}
-            onVoiceCall={handleVoiceCall}
+      {/* Desktop Layout: Show sidebar and chat side by side */}
+      <div className="hidden lg:flex lg:w-full">
+        {/* Desktop Sidebar */}
+        <div className="w-80 border-r border-border">
+          <DMSidebar
+            conversations={conversations}
+            activeConversationId={activeConversation?.id}
+            currentProfile={profile}
+            onSelectConversation={handleSelectConversation}
+            onNewChat={handleNewChat}
+            onLogout={handleLogout}
           />
-        ) : (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center">
-              <div className="w-24 h-24 rounded-3xl bg-accent flex items-center justify-center mx-auto mb-4 shadow-soft">
-                <span className="text-4xl">💬</span>
+        </div>
+
+        {/* Desktop Chat Area */}
+        <main className="flex-1 h-screen">
+          {activeConversation && activeConversation.other_participant ? (
+            <Suspense fallback={
+              <div className="flex-1 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </div>
-              <h2 className="text-xl font-semibold text-foreground mb-2">
-                Your Messages
-              </h2>
-              <p className="text-muted-foreground mb-4">
-                Send private messages to other users
-              </p>
-              <Button onClick={handleNewChat}>Start a conversation</Button>
+            }>
+              <ChatRoom
+                roomName={activeConversation.other_participant.name}
+                roomPhoto={activeConversation.other_participant.photo_url || undefined}
+                roomUserId={activeConversation.other_participant.user_id}
+                messages={formattedMessages}
+                currentUserId={profile.id}
+                typingUser={typingUser}
+                isOnline={activeConversation.other_participant.is_online}
+                lastSeen={format(
+                  new Date(activeConversation.other_participant.last_seen),
+                  "MMM d, h:mm a"
+                )}
+                onSendMessage={handleSendMessage}
+                onDeleteMessage={handleDeleteMessage}
+                onTyping={handleTyping}
+                onBack={() => {}} // No back button needed on desktop
+                onVideoCall={handleVideoCall}
+                onVoiceCall={handleVoiceCall}
+              />
+            </Suspense>
+          ) : (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <div className="w-24 h-24 rounded-3xl bg-accent flex items-center justify-center mx-auto mb-4 shadow-soft">
+                  <span className="text-4xl">💬</span>
+                </div>
+                <h2 className="text-xl font-semibold text-foreground mb-2">
+                  Your Messages
+                </h2>
+                <p className="text-muted-foreground mb-4">
+                  Send private messages to other users
+                </p>
+                <Button onClick={handleNewChat}>Start a conversation</Button>
+              </div>
             </div>
-          </div>
-        )}
-      </main>
+          )}
+        </main>
+      </div>
 
       {/* Incoming Call Dialog */}
       {incomingCall && incomingCall.caller && (

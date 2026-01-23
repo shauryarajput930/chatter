@@ -6,6 +6,7 @@ interface Profile {
   id: string;
   user_id: string;
   name: string;
+  username?: string;
   email: string | null;
   photo_url: string | null;
   is_online: boolean;
@@ -60,7 +61,7 @@ export function ConversationList({
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-1">
       {conversations.map((conversation) => {
         const isActive = conversation.id === activeConversationId;
         const otherUser = conversation.other_participant;
@@ -72,49 +73,77 @@ export function ConversationList({
             key={conversation.id}
             onClick={() => onSelectConversation(conversation)}
             className={cn(
-              "w-full flex items-center gap-3 p-3 rounded-xl",
-              "transition-all duration-200",
+              "w-full flex items-center gap-4 p-4 rounded-2xl transition-all duration-200",
+              "relative overflow-hidden",
               isActive
-                ? "bg-primary/10 shadow-soft"
-                : "hover:bg-accent/50 active:scale-[0.98]",
-              "text-left"
+                ? "bg-gradient-to-r from-primary/15 to-primary/5 shadow-lg border border-primary/20"
+                : "hover:bg-accent/50 active:scale-[0.98] hover:shadow-md",
+              "text-left group"
             )}
           >
-            <Avatar
-              name={otherUser?.name || "Unknown"}
-              imageUrl={otherUser?.photo_url || undefined}
-              size="md"
-              online={otherUser?.is_online}
-              showStatus
-            />
+            {/* Avatar with enhanced styling */}
+            <div className="relative">
+              <Avatar
+                name={otherUser?.name || "Unknown"}
+                imageUrl={otherUser?.photo_url || undefined}
+                size="lg"
+                online={otherUser?.is_online}
+                showStatus
+              />
+              {isUnread && (
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full border-2 border-background animate-pulse" />
+              )}
+            </div>
+            
+            {/* Content */}
             <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between gap-2">
-                <p className={cn(
-                  "font-medium text-sm truncate",
-                  isUnread ? "text-foreground" : "text-foreground"
-                )}>
-                  {otherUser?.name || "Unknown User"}
-                </p>
+              {/* Name and Time */}
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <div className="flex items-center gap-2">
+                  <p className={cn(
+                    "font-semibold text-sm truncate transition-colors",
+                    isUnread ? "text-foreground" : "text-foreground",
+                    isActive && "text-primary"
+                  )}>
+                    {otherUser?.name || "Unknown User"}
+                  </p>
+                  {otherUser?.username && (
+                    <span className="text-xs text-muted-foreground font-medium">
+                      @{otherUser.username}
+                    </span>
+                  )}
+                </div>
                 {lastMessage && (
-                  <span className="text-xs text-muted-foreground shrink-0">
+                  <span className={cn(
+                    "text-xs shrink-0 transition-colors",
+                    isUnread ? "text-primary font-medium" : "text-muted-foreground"
+                  )}>
                     {formatDistanceToNow(new Date(lastMessage.created_at), { addSuffix: false })}
                   </span>
                 )}
               </div>
+              
+              {/* Last Message */}
               <div className="flex items-center gap-2">
                 <p className={cn(
-                  "text-xs truncate flex-1",
-                  isUnread ? "text-foreground font-medium" : "text-muted-foreground"
+                  "text-sm truncate flex-1 transition-colors",
+                  isUnread ? "text-foreground font-medium" : "text-muted-foreground",
+                  "group-hover:text-foreground"
                 )}>
                   {lastMessage?.is_deleted
-                    ? "Message deleted"
-                    : lastMessage?.content || "No messages yet"}
+                    ? "🗑️ Message deleted"
+                    : lastMessage?.content || "📝 No messages yet"}
                 </p>
                 {isUnread && (
-                  <div className="w-2 h-2 rounded-full bg-primary shrink-0" />
+                  <div className="w-2 h-2 rounded-full bg-primary shrink-0 animate-pulse" />
                 )}
               </div>
             </div>
+            
+            {/* Active indicator */}
+            {isActive && (
+              <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full" />
+            )}
           </button>
         );
       })}

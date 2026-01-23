@@ -56,7 +56,51 @@ export function useGroupChats() {
   const [activeGroup, setActiveGroup] = useState<string | null>(null);
   const [messages, setMessages] = useState<GroupMessage[]>([]);
   const [members, setMembers] = useState<GroupMember[]>([]);
+  const [allProfiles, setAllProfiles] = useState<Array<{ id: string; name: string; photo_url: string | null; is_online: boolean }>>([]);
   const [loading, setLoading] = useState(true);
+
+  // Listen for real-time presence updates
+  useEffect(() => {
+    const handlePresenceUpdate = (event: CustomEvent) => {
+      const { user_id, is_online, last_seen } = event.detail;
+      
+      // Update allProfiles state
+      setAllProfiles(prev => 
+        prev.map(p => 
+          p.id === user_id ? { ...p, is_online, last_seen } : p
+        )
+      );
+      
+      // Update members state
+      setMembers(prev =>
+        prev.map(m =>
+          m.profile_id === user_id 
+            ? { ...m, profile: { ...m.profile, is_online, last_seen } }
+            : m
+        )
+      );
+    };
+
+    window.addEventListener('presence_update', handlePresenceUpdate as EventListener);
+    
+    return () => {
+      window.removeEventListener('presence_update', handlePresenceUpdate as EventListener);
+    };
+  }, []);
+
+  // Fetch all profiles for creating groups
+  const fetchAllProfiles = async () => {
+    if (!profile) return;
+
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id, name, username, photo_url, is_online")
+      .neq("id", profile.id);
+
+    if (data && !error) {
+      setAllProfiles(data);
+    }
+  };
 
   const fetchGroups = async () => {
     if (!profile) return;
@@ -260,8 +304,76 @@ export function useGroupChats() {
       .eq("id", messageId);
   };
 
+  const deleteGroupChat = async (groupId: string) => {
+    if (!profile) return;
+
+    // Delete all messages for this group
+    await supabase
+      .from("group_messages")
+      .delete()
+      .eq("group_id", groupId);
+
+    // Remove user from group members
+    await supabase
+      .from("group_members")
+      .delete()
+      .eq("group_id", groupId)
+      .eq("profile_id", profile.id);
+
+    // If user was the only member, delete the group entirely
+    const { data: remainingMembers } = await supabase
+      .from("group_members")
+      .select("profile_id")
+      .eq("group_id", groupId);
+
+    if (!remainingMembers || remainingMembers.length === 0) {
+      await supabase
+        .from("group_chats")
+        .delete()
+        .eq("id", groupId);
+    }
+
+    // Refresh groups list
+    await fetchGroups();
+    
+    // Clear active group if it was the deleted one
+    if (activeGroup === groupId) {
+      setActiveGroup(null);
+      setMessages([]);
+      setMembers([]);
+    }
+  };
+
+  const addMembers = async (groupId: string, memberIds: string[]) => {
+    if (!profile) return;
+
+    // Add new members to the group
+    const { error } = await supabase
+      .from("group_members")
+      .insert(
+        memberIds.map((id) => ({
+          group_id: groupId,
+          profile_id: id,
+          role: "member",
+        }))
+      );
+
+    if (error) {
+      throw error;
+    }
+
+    // Refresh members list for the active group
+    if (activeGroup === groupId) {
+      await fetchMembers(groupId);
+    }
+
+    // Refresh groups list to update member counts
+    await fetchGroups();
+  };
+
   useEffect(() => {
     fetchGroups();
+    fetchAllProfiles();
   }, [profile]);
 
   useEffect(() => {
@@ -295,10 +407,13 @@ export function useGroupChats() {
     setActiveGroup,
     messages,
     members,
+    allProfiles,
     loading,
     createGroup,
     sendMessage,
     deleteMessage,
+    deleteGroupChat,
+    addMembers,
     refreshGroups: fetchGroups,
   };
 }

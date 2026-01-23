@@ -164,6 +164,21 @@ export default function Profile() {
 
           <div className="space-y-2">
             <label className="text-sm font-medium flex items-center gap-2">
+              <User className="w-4 h-4 text-muted-foreground" />
+              Username
+            </label>
+            <Input
+              value={profile?.username ? `@${profile.username}` : "Not set"}
+              disabled
+              className="rounded-xl bg-muted"
+            />
+            <p className="text-xs text-muted-foreground">
+              Set your username in Settings to make it easier for friends to find you
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium flex items-center gap-2">
               <Mail className="w-4 h-4 text-muted-foreground" />
               Email
             </label>
