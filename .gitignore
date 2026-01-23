@@ -23,4 +23,21 @@ dist-ssr
 *.sln
 *.sw?
 *.env
- 
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Lock files
+package-lock.json
+bun.lockb
+yarn.lock
+pnpm-lock.yaml
+
+# Duplicate directories
+src copy/
+src copy*/
+
+# Temporary files
+*.tmp
+*.temp
