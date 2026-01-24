@@ -24,9 +24,15 @@ import ResetPassword from "./pages/ResetPassword";
 import OTPPasswordReset from "./pages/OTPPasswordReset";
 import TwoFactorSetup from "./pages/TwoFactorSetup";
 import TwoFactorDisable from "./pages/TwoFactorDisable";
+import TermsOfService from "./pages/TermsOfService";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 import NotFound from "./pages/NotFound";
+import { monitorSessionHealth } from "@/utils/sessionUtils";
 
 const queryClient = new QueryClient();
+
+// Initialize session monitoring
+monitorSessionHealth();
 
 const App = () => (
   <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
@@ -54,6 +60,8 @@ const App = () => (
               <Route path="/change-password" element={<ChangePassword />} />
               <Route path="/2fa-setup" element={<TwoFactorSetup />} />
               <Route path="/2fa-disable" element={<TwoFactorDisable />} />
+              <Route path="/terms" element={<TermsOfService />} />
+              <Route path="/privacy" element={<PrivacyPolicy />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

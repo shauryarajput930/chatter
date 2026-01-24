@@ -114,13 +114,13 @@ export default function Settings() {
         {
           icon: Shield,
           label: "Privacy Policy",
-          onClick: () => {},
+          onClick: () => window.location.href = '/privacy',
           showArrow: true,
         },
         {
           icon: HelpCircle,
           label: "Help & Support",
-          onClick: () => {},
+          onClick: () => window.open('mailto:shauryarajput930@gmail.com'),
           showArrow: true,
         },
       ],

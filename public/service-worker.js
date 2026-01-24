@@ -25,6 +25,9 @@ self.addEventListener('push', (event) => {
       tag,
       data: notificationData,
       vibrate: [200, 100, 200],
+      sound: '/notification-sound.mp3',
+      requireInteraction: false,
+      silent: false,
       actions: [
         {
           action: 'open',
@@ -37,8 +40,28 @@ self.addEventListener('push', (event) => {
       ],
     };
 
+    // Play notification sound
     event.waitUntil(
-      self.registration.showNotification(title, options)
+      self.registration.showNotification(title, options).then(() => {
+        // Create audio context to play sound
+        try {
+          const audioContext = new AudioContext();
+          const oscillator = audioContext.createOscillator();
+          const gainNode = audioContext.createGain();
+          
+          oscillator.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+          
+          oscillator.frequency.value = 800;
+          oscillator.type = 'sine';
+          gainNode.gain.value = 0.1;
+          
+          oscillator.start();
+          oscillator.stop(audioContext.currentTime + 0.2);
+        } catch (error) {
+          console.log('Could not play notification sound:', error);
+        }
+      })
     );
   } catch (error) {
     console.error('Error handling push notification:', error);

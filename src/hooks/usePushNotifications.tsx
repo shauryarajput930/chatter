@@ -2,9 +2,33 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 
-interface PushSubscriptionOptions {
-  userVisibleOnly: boolean;
-  applicationServerKey?: string;
+// VAPID public key for push notifications
+// This is a demo key - you should generate your own VAPID keys for production
+const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || 
+  'BEl62iUYgUjxj18Jcm8VRge2cNAuJZaOvJmAGYKlSzR8QFO0igXqZ1zyZ8BjDqCgV2vJkY9YL8ZDB2uJm7Q_tXQ';
+
+// Helper function to convert VAPID key with error handling
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  try {
+    // Remove any whitespace and ensure proper padding
+    const cleanBase64 = base64String.replace(/\s/g, '');
+    const padding = '='.repeat((4 - (cleanBase64.length % 4)) % 4);
+    const base64 = (cleanBase64 + padding)
+      .replace(/-/g, '+')
+      .replace(/_/g, '/');
+
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+
+    return outputArray;
+  } catch (error) {
+    console.error('Error decoding VAPID key:', error);
+    throw new Error('Invalid VAPID key format');
+  }
 }
 
 export function usePushNotifications() {
@@ -78,7 +102,7 @@ export function usePushNotifications() {
   }, [isSupported, registerServiceWorker]);
 
   // Subscribe to push notifications
-  const subscribe = useCallback(async (vapidKey?: string) => {
+  const subscribe = useCallback(async () => {
     if (!isSupported || !profile) {
       setError('Push notifications not supported or user not authenticated');
       return false;
@@ -117,14 +141,11 @@ export function usePushNotifications() {
         return true;
       }
 
-      // Subscribe to push notifications
-      const options: PushSubscriptionOptions = {
+      // Subscribe to push notifications with VAPID key
+      const options = {
         userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as unknown as BufferSource,
       };
-
-      if (vapidKey) {
-        options.applicationServerKey = urlBase64ToUint8Array(vapidKey) as unknown as string;
-      }
 
       subscription = await pushManager.subscribe(options);
 
@@ -271,21 +292,4 @@ export function usePushNotifications() {
     requestPermission,
     checkSubscription,
   };
-}
-
-// Helper function to convert VAPID key
-function urlBase64ToUint8Array(base64String: string): Uint8Array {
-  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding)
-    .replace(/\-/g, '+')
-    .replace(/_/g, '/');
-
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i);
-  }
-
-  return outputArray;
 }

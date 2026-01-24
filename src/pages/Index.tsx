@@ -148,9 +148,17 @@ export default function Index() {
             </div>
             <span className="font-semibold text-foreground">Chatter</span>
           </div>
-          <p className="text-sm text-muted-foreground">
-            © 2026 Chatter. All rights reserved.
-          </p>
+          <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground">
+            <span>© 2026 Chatter. All rights reserved.</span>
+            <span>•</span>
+            <a href="/terms" className="hover:text-primary hover:underline">
+              Terms of Service
+            </a>
+            <span>•</span>
+            <a href="/privacy" className="hover:text-primary hover:underline">
+              Privacy Policy
+            </a>
+          </div>
         </div>
       </footer>
     </div>

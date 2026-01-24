@@ -270,6 +270,17 @@ export default function Login() {
             Register
           </Link>
         </p>
+
+        {/* Legal Links */}
+        <div className="text-center mt-4 text-xs text-muted-foreground space-x-4">
+          <Link to="/terms" className="hover:text-primary hover:underline">
+            Terms of Service
+          </Link>
+          <span>•</span>
+          <Link to="/privacy" className="hover:text-primary hover:underline">
+            Privacy Policy
+          </Link>
+        </div>
       </div>
     </div>
   );

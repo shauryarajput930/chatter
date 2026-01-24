@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Camera, Mail, User, FileText, Save, Loader2 } from "lucide-react";
+import { useNavigate, Link } from "react-router-dom";
+import { ArrowLeft, Camera, Mail, User, FileText, Save, Loader2, HelpCircle, Shield } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -210,6 +210,51 @@ export default function Profile() {
             <Save className="w-4 h-4 mr-2" />
             Save Changes
           </Button>
+        </div>
+
+        {/* Legal & Support Section */}
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold">Legal & Support</h2>
+          <div className="space-y-3">
+            <div
+              onClick={() => window.location.href = '/privacy'}
+              className="flex items-center gap-3 p-4 rounded-xl border border-border hover:bg-accent/50 transition-colors cursor-pointer"
+            >
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Shield className="w-5 h-5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-medium">Privacy Policy</h3>
+                <p className="text-sm text-muted-foreground">Learn how we protect your data</p>
+              </div>
+            </div>
+
+            <div
+              onClick={() => window.location.href = '/terms'}
+              className="flex items-center gap-3 p-4 rounded-xl border border-border hover:bg-accent/50 transition-colors cursor-pointer"
+            >
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <FileText className="w-5 h-5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-medium">Terms of Service</h3>
+                <p className="text-sm text-muted-foreground">Read our terms and conditions</p>
+              </div>
+            </div>
+
+            <div
+              onClick={() => window.open('mailto:shauryarajput930@gmail.com')}
+              className="flex items-center gap-3 p-4 rounded-xl border border-border hover:bg-accent/50 transition-colors cursor-pointer"
+            >
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <HelpCircle className="w-5 h-5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-medium">Help & Support</h3>
+                <p className="text-sm text-muted-foreground">Get help or report issues</p>
+              </div>
+            </div>
+          </div>
         </div>
       </main>
     </div>

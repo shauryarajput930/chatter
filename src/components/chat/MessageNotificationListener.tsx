@@ -2,6 +2,28 @@ import { useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 
+// Function to play notification sound
+const playNotificationSound = () => {
+  try {
+    // Create audio context for notification sound
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.frequency.value = 800;
+    oscillator.type = 'sine';
+    gainNode.gain.value = 0.1;
+    
+    oscillator.start();
+    oscillator.stop(audioContext.currentTime + 0.2);
+  } catch (error) {
+    console.log('Could not play notification sound:', error);
+  }
+};
+
 interface NotificationManager {
   showNotification: (
     title: string,
@@ -89,6 +111,9 @@ export function MessageNotificationListener() {
             .single();
 
           if (sender) {
+            // Play notification sound
+            playNotificationSound();
+            
             await showNotification(`New message from ${sender.name}`, {
               body: message.content.substring(0, 100),
               tag: `dm-${message.conversation_id}`,
@@ -135,6 +160,9 @@ export function MessageNotificationListener() {
             .single();
 
           if (group && sender) {
+            // Play notification sound
+            playNotificationSound();
+            
             await showNotification(`${sender.name} in ${group.name}`, {
               body: message.content.substring(0, 100),
               tag: `gm-${message.group_id}`,
