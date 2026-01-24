@@ -371,12 +371,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Documentation** - Check this README and docs folder
 - **Issues** - Report bugs on GitHub Issues
 - **Discussions** - Ask questions on GitHub Discussions
-- **Email** - Contact support@example.com
-
-### Community
-- **Discord** - Join our Discord server
-- **Twitter** - Follow @chatter_app
-- **Blog** - Read our development blog
+- **Email** - Contact shauryarajput930@gmail.com
 
 ---
 
